@@ -1,0 +1,44 @@
+name: Build 10thgradeps APK
+
+on:
+workflow_dispatch:
+push:
+branches:
+- main
+
+permissions:
+contents: read
+
+jobs:
+build:
+runs-on: ubuntu-latest
+steps:
+- name: Checkout project
+uses: actions/checkout@v4
+
+  - name: Set up Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: '17'
+
+  - name: Install Gradle
+    run: |
+      curl -fL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o "$RUNNER_TEMP/gradle.zip"
+      unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+      echo "$RUNNER_TEMP/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+  - name: Install Android SDK packages
+    run: |
+      yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
+      "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-35" "build-tools;35.0.0"
+
+  - name: Build APK
+    run: gradle --no-daemon assembleDebug
+
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: 10thgradeps-debug-apk
+      path: app/build/outputs/apk/debug/app-debug.apk
+      if-no-files-found: error
